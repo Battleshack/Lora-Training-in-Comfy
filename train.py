@@ -11,7 +11,7 @@ import torch
 is_v2_model = 0 # SD2.0 model | SD2.0模型 2.0模型下 clip_skip 默认无效
 parameterization = 0 # parameterization | 参数化 本参数需要和 V2 参数同步使用 实验性功能
 #train_data_dir = "" # train dataset path | 训练数据集路径
-reg_data_dir = "" # directory for regularization images | 正则化数据集路径，默认不使用正则化图像。
+#reg_data_dir = "" # will use /reg_data_dir in parent directory
 
 # Network settings | 网络设置
 network_module = "networks.lora" # 在这里将会设置训练的网络种类，默认为 networks.lora 也就是 LoRA 训练。如果你想训练 LyCORIS（LoCon、LoHa） 等，则修改这个值为 lycoris.kohya
@@ -36,13 +36,13 @@ min_snr_gamma = 0 # minimum signal-to-noise ratio (SNR) value for gamma-ray | �
 # Learning rate | 学习率
 lr = "1e-4" # learning rate | 学习率，在分别设置下方 U-Net 和 文本编码器 的学习率时，该参数失效
 unet_lr = "1e-4" # U-Net learning rate | U-Net 学习率
-text_encoder_lr = "1e-5" # Text Encoder learning rate | 文本编码器 学习率
-lr_scheduler = "cosine_with_restarts" # "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"
+text_encoder_lr = "5e-5" # Text Encoder learning rate | 文本编码器 学习率
+lr_scheduler = "cosine" # "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"
 lr_warmup_steps = 0 # warmup steps | 学习率预热步数，lr_scheduler 为 constant 或 adafactor 时该值需要设为0。
 lr_restart_cycles = 1 # cosine_with_restarts restart cycles | 余弦退火重启次数，仅在 lr_scheduler 为 cosine_with_restarts 时起效。
 
 # 优化器设置
-optimizer_type = "AdamW8bit" # Optimizer type | 优化器类型 默认为 AdamW8bit，可选：AdamW AdamW8bit Lion Lion8bit SGDNesterov SGDNesterov8bit DAdaptation AdaFactor prodigy
+optimizer_type = "AdamW" # Optimizer type | 优化器类型 默认为 AdamW8bit，可选：AdamW AdamW8bit Lion Lion8bit SGDNesterov SGDNesterov8bit DAdaptation AdaFactor prodigy
 
 # Output settings | 输出设置
 #output_name = "Pkmn3GTest" # output model name | 模型保存名称
@@ -64,7 +64,7 @@ lowram = 0 # lowram mode | 低内存模式 该模式下会将 U-net 文本编码
 algo = "lora" # LyCORIS network algo | LyCORIS 网络算法 可选 lora、loha、lokr、ia3、dylora。lora即为locon
 conv_dim = 4 # conv dim | 类似于 network_dim，推荐为 4
 conv_alpha = 4 # conv alpha | 类似于 network_alpha，可以采用与 conv_dim 一致或者更小的值
-dropout = "0"  # dropout | dropout 概率, 0 为不使用 dropout, 越大则 dropout 越多，推荐 0~0.5， LoHa/LoKr/(IA)^3 暂时不支持
+dropout = "0.1"  # dropout | dropout 概率, 0 为不使用 dropout, 越大则 dropout 越多，推荐 0~0.5， LoHa/LoKr/(IA)^3 暂时不支持
 
 # 远程记录设置
 use_wandb = 0 # enable wandb logging | 启用wandb远程记录功能
@@ -134,7 +134,10 @@ class LoraTraininginComfy:
         #loadedmodel.model_unload(self, current_loaded_models)
         #transform backslashes into slashes for user convenience.
         train_data_dir = data_path.replace( "\\", "/")
+        #use /reg_data_dir folder in parent directory for regularization images
+        reg_data_dir = os.path.join(train_data_dir, os.pardir, 'reg_data_dir')
         #print(train_data_dir)
+
 
         #generates a random seed
         theseed = random.randint(0, 2^32-1)
@@ -291,12 +294,13 @@ class LoraTraininginComfyAdvanced:
         
         #transform backslashes into slashes for user convenience.
         train_data_dir = data_path.replace( "\\", "/")
+        reg_data_dir = os.path.join(train_data_dir, os.pardir, 'reg_data_dir')
         
         
         
         #ADVANCED parameters initialization
         is_v2_model=0
-        network_moduke="networks.lora"
+        network_module="networks.lora"
         network_dim=32
         network_alpha=32
         resolution = "512,512"
@@ -419,7 +423,7 @@ class LoraTraininginComfyAdvanced:
 
         nodespath = nodespath.replace( "\\", "/")
         
-        command = "python -m accelerate.commands.launch " + launchargs + f'--num_cpu_threads_per_process=8 "custom_nodes/Lora-Training-in-Comfy/sd-scripts/train_network.py" --enable_bucket --pretrained_model_name_or_path={pretrained_model} --train_data_dir="{train_data_dir}" --output_dir="{output_dir}" --logging_dir="./logs" --log_prefix={output_name} --resolution={resolution} --network_module={network_module} --max_train_epochs={max_train_epoches} --learning_rate={lr} --unet_lr={unet_lr} --text_encoder_lr={text_encoder_lr} --lr_scheduler={lr_scheduler} --lr_warmup_steps={lr_warmup_steps} --lr_scheduler_num_cycles={lr_restart_cycles} --network_dim={network_dim} --network_alpha={network_alpha} --output_name={output_name} --train_batch_size={batch_size} --save_every_n_epochs={save_every_n_epochs} --mixed_precision="fp16" --save_precision="fp16" --seed={theseed} --cache_latents --prior_loss_weight=1 --max_token_length=225 --caption_extension=".txt" --save_model_as={save_model_as} --min_bucket_reso={min_bucket_reso} --max_bucket_reso={max_bucket_reso} --keep_tokens={keep_tokens} --xformers --shuffle_caption ' + extargs
+        command = "python -m accelerate.commands.launch " + launchargs + f'--num_cpu_threads_per_process=8 "{nodespath}" --enable_bucket --pretrained_model_name_or_path={pretrained_model} --train_data_dir="{train_data_dir}" --output_dir="{output_dir}" --logging_dir="./logs" --log_prefix={output_name} --resolution={resolution} --network_module={network_module} --max_train_epochs={max_train_epoches} --learning_rate={lr} --unet_lr={unet_lr} --text_encoder_lr={text_encoder_lr} --lr_scheduler={lr_scheduler} --lr_warmup_steps={lr_warmup_steps} --lr_scheduler_num_cycles={lr_restart_cycles} --network_dim={network_dim} --network_alpha={network_alpha} --output_name={output_name} --train_batch_size={batch_size} --save_every_n_epochs={save_every_n_epochs} --mixed_precision="fp16" --save_precision="fp16" --seed={theseed} --cache_latents --prior_loss_weight=1 --max_token_length=225 --caption_extension=".txt" --save_model_as={save_model_as} --min_bucket_reso={min_bucket_reso} --max_bucket_reso={max_bucket_reso} --keep_tokens={keep_tokens} --xformers --shuffle_caption ' + extargs
         #print(command)
         subprocess.run(command, shell=True)
         print("Train finished")
