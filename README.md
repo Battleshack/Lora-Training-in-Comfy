@@ -2,7 +2,7 @@ This is a fork of [LarryJane491's Lora-Training-in-Comfy](https://github.com/Lar
 
 ## How this fork differs from the original master branch
 - Implemented a bugfix for the Advanced node, correcting typing error on line 299 in the train.py file. (_network_moduke_ changed to _network_module_.)
-- Changed some default parameter for the simple node.
+- Changed some hidden parameter for the simple node.
 - Added Support for regularization dataset. 
 
 ### How to add regularization dataset
