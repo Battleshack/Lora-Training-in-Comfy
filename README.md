@@ -6,4 +6,5 @@ This is a fork of [LarryJane491's Lora-Training-in-Comfy](https://github.com/Lar
 - Added Support for regularization dataset. 
 
 ### How to add regularization dataset
-Make a folder in the _data_path_ directory, and name this new folder _reg_train_dir_.
+Make a folder in the _data_path_ directory, and name this new folder _reg_data_dir_.
+![bilde](https://github.com/Battleshack/Lora-Training-in-Comfy/assets/112418655/d9920eb6-534a-477e-9c54-061028b0ab5b)
